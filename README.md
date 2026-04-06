@@ -10,6 +10,8 @@ This is a role-based assignment dashboard built as a frontend intern assignment.
 
 The application is fully responsive and built using React with Vite and Tailwind CSS. All data is stored using local storage so it works without a backend.
 
+Dashboard : https://joineazy-assignment-dashboard.vercel.app
+
 ---
 
 ## Features
