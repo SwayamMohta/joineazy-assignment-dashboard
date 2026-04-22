@@ -7,28 +7,28 @@
 @tailwind utilities;
 
 /* ── Theme Tokens ─────────────────────────────────────────────────────────── */
-/* Light mode defaults */
+/* Light mode defaults ("Clean Studio") */
 :root {
-  --color-bg:        #f5f7fa;
-  --color-bg-low:    #eef1f5;
-  --color-bg-card:   #ffffff;
-  --color-text:      #0d1b2a;
-  --color-text-muted:#586377;
-  --color-border:    rgba(0, 0, 0, 0.07);
-  --color-primary:   #002045;
-  --color-accent:    #00b47d;
+  --color-bg:        #F8FAFC;
+  --color-bg-low:    #F1F5F9;
+  --color-bg-card:   #FFFFFF;
+  --color-text:      #1E293B;
+  --color-text-muted:#64748B;
+  --color-border:    rgba(0, 0, 0, 0.04);
+  --color-primary:   #0F172A;
+  --color-accent:    #D97706;
 }
 
-/* Dark mode overrides — applied when <html> has class="dark" */
+/* Dark mode overrides ("Premium Dark") */
 html.dark {
-  --color-bg:        #0b1622;
-  --color-bg-low:    #061122;
-  --color-bg-card:   #112240;
-  --color-text:      #e8f0fe;
-  --color-text-muted:#8caccc;
-  --color-border:    rgba(255, 255, 255, 0.08);
-  --color-primary:   #adc7f7;
-  --color-accent:    #4edea3;
+  --color-bg:        #0B0F14;
+  --color-bg-low:    #070A0F;
+  --color-bg-card:   #181F2A;
+  --color-text:      #F8FAFC;
+  --color-text-muted:#94A3B8;
+  --color-border:    rgba(255, 255, 255, 0.06);
+  --color-primary:   #F59E0B;
+  --color-accent:    #F59E0B;
 }
 
 /* ── Base Reset ───────────────────────────────────────────────────────────── */
@@ -72,59 +72,58 @@ html.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
 
 /* ── Component Utilities ──────────────────────────────────────────────────── */
 @layer components {
-  /* Primary CTA button */
+  /* Primary CTA button with restrained depth */
   .btn-primary {
-    background: linear-gradient(135deg, #002045 0%, #1a365d 100%);
-    color: #ffffff;
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    border-radius: 0.75rem;
-    padding: 0.625rem 1.5rem;
-    font-size: 0.875rem;
-    transition: all 0.25s ease;
-    cursor: pointer;
-    border: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .btn-primary:hover {
-    box-shadow: 0 8px 24px rgba(0,32,69,0.25);
-    transform: translateY(-1px);
-  }
-  .btn-primary:active { transform: scale(0.97); }
-
-  .btn-primary-gradient {
-    background: linear-gradient(135deg, #002045 0%, #1a365d 100%);
-    color: #ffffff;
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    border-radius: 0.75rem;
-    padding: 0.625rem 1.5rem;
-    font-size: 0.875rem;
-    transition: all 0.25s ease;
-    cursor: pointer;
-    border: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .btn-primary-gradient:hover {
-    box-shadow: 0 8px 24px rgba(0,32,69,0.25);
-    transform: translateY(-1px);
+    @apply bg-brand-primary text-white font-medium rounded-lg px-6 py-2.5 
+           transition-all duration-200 flex items-center gap-2 shadow-sm
+           hover:bg-slate-800 active:scale-[0.98]
+           dark:bg-dark-primary dark:text-dark-bg dark:hover:bg-amber-400;
+    
+    /* Subtle top-down gradient for depth */
+    background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%), var(--color-primary);
   }
 
-  /* Card */
+  /* Card with subtle depth */
   .card {
     background-color: var(--color-bg-card);
     border: 1px solid var(--color-border);
     border-radius: 0.75rem;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
+    transition: all 0.3s ease;
+    @apply shadow-sm;
+  }
+
+  .card:hover {
+    @apply shadow-md;
+    border-color: rgba(0,0,0,0.08);
+  }
+  
+  html.dark .card:hover {
+    border-color: rgba(255,255,255,0.12);
+  }
+
+  /* Premium Depth: subtle inner border for dark mode cards/elements */
+  .premium-depth {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .premium-depth::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
 
   /* Selection */
   ::selection {
-    background-color: #d5e0f7;
-    color: #002045;
+    background-color: var(--color-accent);
+    color: white;
   }
 }

@@ -2,19 +2,33 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AssignmentCard from '../components/AssignmentCard';
 import CreateAssignmentModal from '../components/CreateAssignmentModal';
+import EditAssignmentModal from '../components/EditAssignmentModal';
 
-const AssignmentsPage = ({ assignments, setAssignments, role, onOpenSubmitModal, searchQuery, onToggleSubtask }) => {
+const AssignmentsPage = ({ user, assignments, setAssignments, onEditAssignment, role, onOpenSubmitModal, searchQuery, onToggleSubtask }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('deadline');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
 
+  const getIsSubmitted = (asgn) => {
+    if (!user) return false;
+    const sub = (asgn.submissions || []).find(s => 
+      (asgn.type === 'group' && s.groupId === user.groupId) || 
+      (asgn.type === 'individual' && s.studentId === user.id)
+    );
+    return sub ? sub.submitted : false;
+  };
+
   const filteredAssignments = assignments
     .filter(a => {
-      const matchesStatus = filterStatus === 'all' || a.status === filterStatus;
+      const isSubmitted = getIsSubmitted(a);
+      const effectiveStatus = isSubmitted ? 'submitted' : 'pending';
+      const matchesStatus = filterStatus === 'all' || effectiveStatus === filterStatus;
       const q = (searchQuery || '').toLowerCase();
-      const matchesSearch = !q || a.title.toLowerCase().includes(q) || a.subject.toLowerCase().includes(q) || a.description.toLowerCase().includes(q);
+      const matchesSearch = !q || a.title.toLowerCase().includes(q) || (a.subject || '').toLowerCase().includes(q) || (a.description || '').toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     })
     .sort((a, b) => {
@@ -28,8 +42,8 @@ const AssignmentsPage = ({ assignments, setAssignments, role, onOpenSubmitModal,
   const handleDelete = (id) => { setAssignments(prev => prev.filter(a => a.id !== id)); setDeleteConfirmId(null); };
 
   const totalCount = assignments.length;
-  const pendingCount = assignments.filter(a => a.status === 'pending').length;
-  const submittedCount = assignments.filter(a => a.status === 'submitted').length;
+  const submittedCount = assignments.filter(a => getIsSubmitted(a)).length;
+  const pendingCount = totalCount - submittedCount;
 
   return (
     <div className="space-y-8">
@@ -37,18 +51,18 @@ const AssignmentsPage = ({ assignments, setAssignments, role, onOpenSubmitModal,
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-widest text-brand-muted dark:text-dark-muted font-label">
-            {role === 'admin' ? 'Admin · Assignment Management' : 'Student · My Assignments'}
+            {role === 'professor' ? 'Faculty · Assignment Management' : 'Student · My Assignments'}
           </span>
           <h1 className="font-headline text-4xl font-extrabold tracking-tight text-brand-primary dark:text-dark-text mt-1">
-            {role === 'admin' ? 'Manage Assignments' : 'My Assignments'}
+            {role === 'professor' ? 'Manage Assignments' : 'My Assignments'}
           </h1>
           <p className="text-brand-muted dark:text-dark-muted font-body font-medium mt-1.5">
-            {role === 'admin'
+            {role === 'professor'
               ? `${totalCount} assignments across ${pendingCount} active, ${submittedCount} closed.`
               : `${pendingCount} pending · ${submittedCount} submitted.`}
           </p>
         </div>
-        {role === 'admin' && (
+        {role === 'professor' && (
           <button
             onClick={() => setShowCreateModal(true)}
             className="btn-primary flex items-center gap-2 flex-shrink-0"
@@ -129,8 +143,8 @@ const AssignmentsPage = ({ assignments, setAssignments, role, onOpenSubmitModal,
                 onToggleSubtask={onToggleSubtask}
               />
 
-              {/* Admin drill-down panel */}
-              {role === 'admin' && (
+              {/* Professor drill-down panel */}
+              {role === 'professor' && (
                 <AnimatePresence>
                   {expandedId === asgn.id && (
                     <motion.div
@@ -141,7 +155,7 @@ const AssignmentsPage = ({ assignments, setAssignments, role, onOpenSubmitModal,
                     >
                       <div className="flex justify-between items-start mb-4">
                         <div>
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-brand-muted dark:text-dark-muted font-label">Student Breakdown</span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-brand-muted dark:text-dark-muted font-label">Submission Overview</span>
                           <h3 className="font-headline text-base font-bold text-brand-text dark:text-dark-text mt-0.5">{asgn.title}</h3>
                         </div>
                         <button
@@ -153,25 +167,17 @@ const AssignmentsPage = ({ assignments, setAssignments, role, onOpenSubmitModal,
                       </div>
 
                       <div className="space-y-3">
-                        {asgn.submissions.map(sub => (
-                          <div key={sub.studentId} className="flex items-center gap-3">
-                            <img
-                              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${sub.studentName}`}
-                              alt={sub.studentName}
-                              className="w-8 h-8 rounded-full bg-brand-chip dark:bg-brand-secondary flex-shrink-0"
-                            />
+                        {(asgn.submissions || []).map(sub => (
+                          <div key={sub.studentId || sub.groupId} className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-brand-bg-low dark:bg-white/10 flex items-center justify-center flex-shrink-0">
+                               <span className="material-symbols-outlined text-[14px]">person</span>
+                            </div>
                             <div className="flex-grow min-w-0">
                               <div className="flex justify-between text-xs font-bold text-brand-text dark:text-dark-text">
-                                <span>{sub.studentName}</span>
-                                <span className={sub.progress === 100 ? 'text-brand-accent dark:text-brand-accent-dim' : 'text-brand-muted dark:text-dark-muted'}>
-                                  {sub.submitted ? '✓ Submitted' : `${sub.progress}%`}
+                                <span>{sub.studentName || sub.groupName}</span>
+                                <span className={sub.submitted ? 'text-brand-accent dark:text-brand-accent-dim' : 'text-brand-muted dark:text-dark-muted'}>
+                                  {sub.submitted ? '✓ Submitted' : `${sub.progress || 0}%`}
                                 </span>
-                              </div>
-                              <div className="h-1.5 w-full bg-brand-bg-low dark:bg-dark-bg-low rounded-full mt-1.5 overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full ${sub.progress === 100 ? 'bg-gradient-to-r from-brand-accent to-brand-accent-dim' : 'bg-gradient-to-r from-brand-primary to-brand-secondary'}`}
-                                  style={{ width: `${sub.progress}%` }}
-                                />
                               </div>
                             </div>
                           </div>
@@ -180,18 +186,11 @@ const AssignmentsPage = ({ assignments, setAssignments, role, onOpenSubmitModal,
 
                       <div className="flex gap-2 mt-5 pt-4 border-t border-black/5 dark:border-white/5">
                         <button
-                          onClick={() => { alert(`Edit: ${asgn.title}`); setExpandedId(null); }}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-brand-chip dark:bg-brand-secondary text-brand-primary dark:text-dark-primary rounded-lg font-bold text-xs hover:opacity-80 transition-opacity"
+                          onClick={() => { setEditingAssignment(asgn); setShowEditModal(true); setExpandedId(null); }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-brand-chip dark:bg-brand-secondary text-brand-primary dark:text-dark-primary rounded-xl font-bold text-xs hover:opacity-80 transition-opacity"
                         >
                           <span className="material-symbols-outlined text-[14px]">edit</span>
                           Edit
-                        </button>
-                        <button
-                          onClick={() => { setDeleteConfirmId(asgn.id); setExpandedId(null); }}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-100 dark:bg-red-900/20 text-error-red dark:text-red-300 rounded-lg font-bold text-xs hover:opacity-80 transition-opacity"
-                        >
-                          <span className="material-symbols-outlined text-[14px]">delete</span>
-                          Delete
                         </button>
                       </div>
                     </motion.div>
@@ -201,7 +200,7 @@ const AssignmentsPage = ({ assignments, setAssignments, role, onOpenSubmitModal,
             </motion.div>
           ))}
 
-          {role === 'admin' && (
+          {role === 'professor' && (
             <motion.button
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -266,6 +265,13 @@ const AssignmentsPage = ({ assignments, setAssignments, role, onOpenSubmitModal,
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreate={handleCreate}
+      />
+
+      <EditAssignmentModal
+        isOpen={showEditModal}
+        onClose={() => { setShowEditModal(false); setEditingAssignment(null); }}
+        onSave={onEditAssignment}
+        assignment={editingAssignment}
       />
     </div>
   );
